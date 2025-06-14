@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { initializeStorage, getUser, saveUser } = require('./storage');
 require('dotenv').config();
 
 const app = express();
@@ -10,8 +11,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// In-memory storage
-const users = new Map();
+// Initialize storage
+initializeStorage().catch(console.error);
 
 // Routes
 app.post('/api/auth/register', async (req, res) => {
@@ -19,12 +20,13 @@ app.post('/api/auth/register', async (req, res) => {
     const { email, password } = req.body;
     
     // Check if user already exists
-    if (users.has(email)) {
+    const existingUser = await getUser(email);
+    if (existingUser) {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    users.set(email, { password: hashedPassword });
+    await saveUser(email, { password: hashedPassword });
     res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
     console.error('Registration error:', error);
@@ -35,7 +37,7 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = users.get(email);
+    const user = await getUser(email);
     
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
