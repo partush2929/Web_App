@@ -14,49 +14,49 @@ app.use(express.json());
 const users = new Map();
 
 // Routes
-app.post('/api/register', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
     
     // Check if user already exists
-    if (users.has(username)) {
-      return res.status(400).json({ error: 'Username already exists' });
+    if (users.has(email)) {
+      return res.status(400).json({ message: 'Email already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    users.set(username, { password: hashedPassword });
+    users.set(email, { password: hashedPassword });
     res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Error creating user' });
+    res.status(500).json({ message: 'Error creating user' });
   }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const user = users.get(username);
+    const { email, password } = req.body;
+    const user = users.get(email);
     
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
     
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    const token = jwt.sign({ username }, 'your_jwt_secret', { expiresIn: '1h' });
+    const token = jwt.sign({ email }, 'your_jwt_secret', { expiresIn: '1h' });
     res.json({ token });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Error logging in' });
+    res.status(500).json({ message: 'Error logging in' });
   }
 });
 
 app.post('/api/echo', (req, res) => {
   const { message } = req.body;
-  res.json({ response: `Echo: ${message}` });
+  res.json({ message: `Echo: ${message}` });
 });
 
 const PORT = process.env.PORT || 5000;

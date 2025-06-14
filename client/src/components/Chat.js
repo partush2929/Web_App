@@ -1,70 +1,80 @@
-import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Chat.css';
 
-const Chat = () => {
+function Chat() {
+  const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
-
-    const userMessage = { text: input, sender: 'user' };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    if (!message.trim()) return;
 
     try {
-      const response = await axios.post('http://localhost:5000/api/echo', {
-        message: input
-      }, {
+      const response = await fetch('http://localhost:5000/api/echo', {
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ message }),
       });
 
-      const botMessage = { text: response.data.response, sender: 'bot' };
-      setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      const errorMessage = { text: 'Error: Could not get response', sender: 'bot' };
-      setMessages(prev => [...prev, errorMessage]);
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessages([...messages, 
+          { text: message, sender: 'user' },
+          { text: data.message, sender: 'bot' }
+        ]);
+        setMessage('');
+      } else {
+        setError(data.message || 'Failed to send message');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
   };
 
   return (
     <div className="chat-container">
-      <div className="chat-messages">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}
-          >
-            {message.text}
+      <div className="chat-header">
+        <h2>Echo Chat</h2>
+        <button onClick={handleLogout} className="logout-button">Logout</button>
+      </div>
+      {error && <div className="error-message">{error}</div>}
+      <div className="messages-container">
+        {messages.map((msg, index) => (
+          <div key={index} className={`message ${msg.sender}`}>
+            {msg.text}
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
-      <form onSubmit={handleSubmit} className="chat-input-form">
+      <form onSubmit={handleSubmit} className="message-form">
         <input
           type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
           placeholder="Type your message..."
-          className="chat-input"
         />
-        <button type="submit" className="send-button">Send</button>
+        <button type="submit">Send</button>
       </form>
     </div>
   );
-};
+}
 
 export default Chat; 
