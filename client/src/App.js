@@ -8,12 +8,14 @@ import './App.css';
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/chat" element={<Chat />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <div className="App">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </div>
     </Router>
   );
 }
