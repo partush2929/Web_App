@@ -31,3 +31,5 @@ yarn-error.log*
 
 # MongoDB
 data/db/ 
+
+token.txt

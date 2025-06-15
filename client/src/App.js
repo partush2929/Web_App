@@ -1,23 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
+import Register from './components/Register';
 import Chat from './components/Chat';
 import './App.css';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  const handleLogin = (token) => {
-    setIsLoggedIn(true);
-  };
-
   return (
-    <div className="App">
-      {!isLoggedIn ? (
-        <Login onLogin={handleLogin} />
-      ) : (
-        <Chat />
-      )}
-    </div>
+    <Router>
+      <div className="App">
+        <div className="background-overlay"></div>
+
+        <div className="app-content">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </div>
+      </div>
+    </Router>
   );
 }
 
