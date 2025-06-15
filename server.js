@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
 const { initializeStorage, getUser, saveUser } = require('./storage');
 require('dotenv').config();
 
@@ -10,6 +12,27 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
 
 // Initialize storage
 initializeStorage().catch(console.error);
@@ -59,6 +82,28 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/echo', (req, res) => {
   const { message } = req.body;
   res.json({ message: `Echo: ${message}` });
+});
+
+// File upload endpoint
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({
+      message: 'File uploaded successfully',
+      file: {
+        name: req.file.originalname,
+        url: fileUrl,
+        size: req.file.size
+      }
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ message: 'Error uploading file' });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
